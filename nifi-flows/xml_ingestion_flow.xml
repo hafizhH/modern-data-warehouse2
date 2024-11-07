@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template encoding-version="1.3">
+    <description>XML to HDFS Ingestion Flow</description>
+    <groupId>group-id</groupId>
+    <name>XML_to_HDFS_Flow</name>
+    <snippet>
+        <processors>
+            <!-- GetFile Processor -->
+            <processor>
+                <id>get-file-processor</id>
+                <class>org.apache.nifi.processors.standard.GetFile</class>
+                <property>
+                    <name>Input Directory</name>
+                    <value>/path/to/input/xml/files</value>
+                </property>
+                <property>
+                    <name>File Filter</name>
+                    <value>.*\.xml</value>
+                </property>
+                <property>
+                    <name>Keep Source File</name>
+                    <value>false</value>
+                </property>
+            </processor>
+
+            <!-- XML Parser Processor -->
+            <processor>
+                <id>xml-parser</id>
+                <class>org.apache.nifi.processors.standard.EvaluateXPath</class>
+                <property>
+                    <name>Destination</name>
+                    <value>flowfile-content</value>
+                </property>
+                <property>
+                    <name>Return Type</name>
+                    <value>nodeset</value>
+                </property>
+            </processor>
+
+            <!-- PutHDFS Processor -->
+            <processor>
+                <id>put-hdfs</id>
+                <class>org.apache.nifi.processors.hadoop.PutHDFS</class>
+                <property>
+                    <name>Hadoop Configuration Resources</name>
+                    <value>/path/to/core-site.xml,/path/to/hdfs-site.xml</value>
+                </property>
+                <property>
+                    <name>Directory</name>
+                    <value>/user/warehouse/xml_data/${now():format('yyyy')}/${now():format('MM')}/${now():format('dd')}</value>
+                </property>
+                <property>
+                    <name>Conflict Resolution Strategy</name>
+                    <value>replace</value>
+                </property>
+            </processor>
+        </processors>
+
+        <connections>
+            <!-- Connect GetFile to XML Parser -->
+            <connection>
+                <sourceId>get-file-processor</sourceId>
+                <destinationId>xml-parser</destinationId>
+                <relationships>
+                    <relationship>success</relationship>
+                </relationships>
+            </connection>
+
+            <!-- Connect XML Parser to PutHDFS -->
+            <connection>
+                <sourceId>xml-parser</sourceId>
+                <destinationId>put-hdfs</destinationId>
+                <relationships>
+                    <relationship>matched</relationship>
+                </relationships>
+            </connection>
+        </connections>
+    </snippet>
+</template>
